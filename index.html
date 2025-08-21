@@ -255,6 +255,82 @@ LIMIT 10</code>
 
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkONkRK9SXSXXQwKkU3tQIuTWkXaE7V7IJOJlHlUk2FoBQWgyWptVZAkkrKCNByHx_zg/exec";
+        <script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby1w_8Q_2dIcFuA5AR7-My76cPj-DXcIZfzf8YO_zvmNQvWlT3HtColveOroo2F0WILTw/exec";
+
+// ---------- Table Rendering ----------
+function renderTable(data) {
+  const tableBody = document.querySelector(".data-table tbody");
+  tableBody.innerHTML = ""; // clear old rows
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row["Campaign Name"] || row.campaign}</td>
+      <td>${row.Platform || row.platform}</td>
+      <td>${row.Impressions || row.impressions}</td>
+      <td>${row.Clicks || row.clicks}</td>
+      <td>${row.CTR || row.ctr}%</td>
+      <td>${row.Conversions || row.conversions}</td>
+      <td>$${row.Cost || row.cost}</td>
+      <td>$${row.CPA || row.cpa}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+// ---------- Chart Initialization ----------
+const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+const performanceChart = new Chart(performanceCtx, {
+  type: 'line',
+  data: {
+    labels: ["Loading..."],
+    datasets: [
+      { label: "Impressions", data: [0], borderColor: "#4285F4", fill: true },
+      { label: "Clicks", data: [0], borderColor: "#34A853", fill: true }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+const platformCtx = document.getElementById('platformChart').getContext('2d');
+const platformChart = new Chart(platformCtx, {
+  type: 'doughnut',
+  data: { labels: ["Loading"], datasets: [{ data: [1], backgroundColor: ['#4285F4','#1877F2','#0077B5','#1DA1F2','#000000'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+// ---------- Chart Updating ----------
+function updateCharts(data) {
+  // Use campaign names as labels
+  performanceChart.data.labels = data.map(r => r["Campaign Name"] || r.campaign);
+  performanceChart.data.datasets[0].data = data.map(r => r.Impressions || r.impressions);
+  performanceChart.data.datasets[1].data = data.map(r => r.Clicks || r.clicks);
+  performanceChart.update();
+
+  // Platform distribution
+  const platformGroups = {};
+  data.forEach(r => {
+    const platform = r.Platform || r.platform;
+    const impressions = Number(r.Impressions || r.impressions) || 0;
+    platformGroups[platform] = (platformGroups[platform] || 0) + impressions;
+  });
+  platformChart.data.labels = Object.keys(platformGroups);
+  platformChart.data.datasets[0].data = Object.values(platformGroups);
+  platformChart.update();
+}
+
+// ---------- Fetch Data ----------
+fetch(WEB_APP_URL)
+  .then(res => res.json())
+  .then(data => {
+    console.log("Fetched data:", data);
+    renderTable(data);
+    updateCharts(data);
+  })
+  .catch(err => console.error("Error fetching:", err));
+</script>
+
         // Performance Over Time Line Chart
         const performanceCtx = document.getElementById('performanceChart').getContext('2d');
         const performanceChart = new Chart(performanceCtx, {
